@@ -1,0 +1,19 @@
+#!/bin/bash
+
+export RANCHER_CONTAINER_ID=[container-id]
+export RANCHER_CURRENT_VERSION_TAG=v2.x.x
+export UPCOMING_VERSION=v2.x.x
+
+docker ps
+docker stop $RANCHER_CONTAINER_ID
+
+docker create --volumes-from $RANCHER_CONTAINER_ID \
+--name rancher-data rancher/rancher:$RANCHER_CURRENT_VERSION_TAG
+
+docker run  --volumes-from rancher-data -v $PWD:/backup \
+alpine tar zcvf /backup/rancher-data-backup-$RANCHER_CURRENT_VERSION_TAG.tar.gz /var/lib/rancher
+
+docker pull rancher/rancher:$UPCOMING_VERSION
+
+docker run -d --volumes-from rancher-data --restart=unless-stopped \
+-p 80:80 -p 443:443 rancher/rancher:$UPCOMING_VERSION
